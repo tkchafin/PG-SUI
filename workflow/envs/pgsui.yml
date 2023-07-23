@@ -1,14 +1,11 @@
-name: tree_sim
+name: pgsui
 channels:
   - bioconda
   - conda-forge
   - defaults
 dependencies:
   - python=3.10
-  - pandas
-  - toytree
-  - matplotlib
-  - numpy
   - pip
   - pip:
-    - pyvolve==1.1.0
+    - snpio
+    - git+https://github.com/btmartin721/PG-SUI.git#egg=pg-sui

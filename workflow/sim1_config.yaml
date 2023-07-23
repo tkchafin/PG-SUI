@@ -1,10 +1,50 @@
-
-# input files and metadata
+###########################
+# fixed params 
 out_dir: "test_output"
+reps: 1
+clades: 4
+clade_size: 20
+num_loci: 10
+loc_len: 100
+snp_per_locus: 1
+model: "gtrgamma"
+write_gene_alignments: False
 
+###########################
+# variable params (can be specified as a list)
+# tree shape
+tree_height: 0.01
 
-# coverage thresholds for multiQC report
-cov_thresholds:
- - 10
- - 30
- - 50
+relative_clade_height:
+ - 0.1
+#  - 0.2
+#  - 0.3
+#  - 0.4
+#  - 0.5
+#  - 0.6
+#  - 0.7
+#  - 0.8
+#  - 0.9
+
+alpha: 
+ - 0.0
+#  - 0.1 
+#  - 0.3 
+#  - 0.5
+
+missing_proportion: 
+ - 0.1 
+#  - 0.2
+#  - 0.3
+#  - 0.4
+#  - 0.5
+#  - 0.6
+#  - 0.7
+#  - 0.8
+#  - 0.9
+
+missing_strategy: 
+ - "nonrandom"
+ - "nonrandom_weighted"
+ - "random"
+ - "random_weighted"

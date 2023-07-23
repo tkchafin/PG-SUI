@@ -61,6 +61,11 @@ def main():
     print("Clade height:", clade_height)
     print("Stem height:", stem_height)
     print("Alpha:", params.alpha)
+    print("Loci:", params.num_loci)
+    print("Locus length:", params.loc_length)
+    print("SNPs per locus:", params.snps_per_locus)
+    print("Clades:", params.num_clades)
+    print("Samples per clade:", params.samples_per_clade)
 
     clades=[]
     poplabels=[]
@@ -109,7 +114,7 @@ def main():
 
     my_tree = pyvolve.read_tree(tree=guidetree)
 
-# Define output path for alignment files
+    # Define output path for alignment files
     if params.write_gene_alignments:
         fasta_outpath = params.prefix + "_alignments"
         try:
@@ -185,17 +190,6 @@ def main():
         write_phylip(introgressed_data, snp_out)
     else:
         write_phylip(data, snp_out)
-
-
-def reroot_tree(tree, rooted="out.rooted.tre", outgroup_wildcard="out"):
-    t=toytree.tree(tree)
-    try:
-        rt=t.root(wildcard=outgroup_wildcard)
-        rt.write(rooted, tree_format=5)
-        return(rt)
-    except Exception:
-        t.write(rooted, tree_format=5)
-        return(None)
 
 
 def hybridization(dat, prob=0.1, source=None, target=None):
@@ -390,7 +384,6 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description="""Tree-based sequence simulation with toytree and pyvolve"""
     )
-
     parser.add_argument("-p", "--prefix", type=str, default="", help="Output file prefix.")
     parser.add_argument("-r", "--seed", type=int, default=None, help="Seed for random number generator.")
     parser.add_argument("-n", "--num_clades", type=int, default=4, help="Number of clades.")

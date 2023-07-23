@@ -25,9 +25,9 @@ class ImputeKNN(Impute):
     """Does K-Nearest Neighbors Iterative Imputation of missing data. Iterative imputation uses the n_nearest_features to inform the imputation at each feature (i.e., SNP site), using the N most correlated features per site. The N most correlated features are drawn with probability proportional to correlation for each imputed target feature to ensure coverage of features throughout the imputation process.
 
     Args:
-        **genotype_data (GenotypeData object)**: GenotypeData instance that was used to read in the sequence data.
+        genotype_data (GenotypeData object): GenotypeData instance that was used to read in the sequence data.
 
-        **prefix (str)**: Prefix for imputed data's output directory.
+        prefix (str): Prefix for imputed data's output directory.
 
         gridparams (Dict[str, Any] or None or None, optional): Dictionary with keys=keyword arguments for the specified estimator and values=lists of parameter values or distributions. If ``gridparams=None``\, a grid search is not performed, otherwise ``gridparams`` will be used to specify parameter ranges or distributions for the grid search. If using ``gridsearch_method="gridsearch"``\, then the ``gridparams`` values can be lists or numpy arrays. If using ``gridsearch_method="randomized_gridsearch"``\, distributions can be specified by using scipy.stats.uniform(low, high) (for a uniform distribution) or scipy.stats.loguniform(low, high) (useful if range of values spans orders of magnitude). If using the genetic algorithm grid search by setting ``gridsearch_method="genetic_algorithm"``\, the parameters can be specified as ``sklearn_genetic.space`` objects. The grid search will determine the optimal parameters as those that maximize the scoring_methods. NOTE: Takes a long time, so you can run it with a small subset of the data using the ``column_subset`` argument just to find the optimal parameters for the classifier, then it will automatically run a full imputation using the optimal parameters. Defaults to None.
 
@@ -83,7 +83,7 @@ class ImputeKNN(Impute):
 
         early_stop_gen (int, optional): If the genetic algorithm sees ``early_stop_gen`` consecutive generations without improvement in the scoring metric, an early stopping callback is implemented. This saves time by reducing the number of generations the genetic algorithm has to perform. Defaults to 5.
 
-        scoring_metric (str, optional): Scoring metric to use for randomized or genetic algorithm grid searches. See https://scikit-learn.org/stable/modules/model_evaluation.html for supported options. Defaults to "roc_auc".
+        scoring_metric (str, optional): Scoring metric to use for grid searches. See the classification metrics in the scikit-learn documentation (https://scikit-learn.org/stable/modules/model_evaluation.html) for supported options. Defaults to "f1_weighted".
 
         chunk_size (int or float, optional): Number of loci for which to perform IterativeImputer at one time. Useful for reducing the memory usage if you are running out of RAM. If integer is specified, selects ``chunk_size`` loci at a time. If a float is specified, selects ``math.ceil(total_loci * chunk_size)`` loci at a time]. Defaults to 1.0 (all features).
 
@@ -101,22 +101,20 @@ class ImputeKNN(Impute):
         best_params (Dict[str, Any]): Best found parameters from grid search.
 
     Example:
-        >>>from sklearn_genetic.space import Categorical, Integer, Continuous
+        >>> data = GenotypeData(
+        >>>     filename="test.str",
+        >>>     filetype="auto",
+        >>>     guidetree="test.tre",
+        >>>     qmatrix_iqtree="test.iqtree"
+        >>> )
         >>>
-        >>>data = GenotypeData(
-        >>>    filename="test.str",
-        >>>    filetype="auto",
-        >>>    guidetree="test.tre",
-        >>>    qmatrix_iqtree="test.iqtree"
-        >>>)
+        >>> # Genetic Algorithm grid_params
+        >>> grid_params = {
+        >>>     "n_neighbors": Integer(3, 10),
+        >>>     "leaf_size": Integer(10, 50),
+        >>> }
         >>>
-        >>># Genetic Algorithm grid_params
-        >>>grid_params = {
-        >>>    "n_neighbors": Integer(3, 10),
-        >>>    "leaf_size": Integer(10, 50),
-        >>>}
-        >>>
-        >>>knn = ImputeKNN(
+        >>> knn = ImputeKNN(
         >>>     genotype_data=data,
         >>>     gridparams=grid_params,
         >>>     cv=5,
@@ -124,9 +122,9 @@ class ImputeKNN(Impute):
         >>>     n_nearest_features=10,
         >>>     n_estimators=100,
         >>>     initial_strategy="phylogeny",
-        >>>)
+        >>> )
         >>>
-        >>>knn_gtdata = knn.imputed
+        >>> knn_gtdata = knn.imputed
     """
 
     def __init__(
@@ -167,7 +165,7 @@ class ImputeKNN(Impute):
         mutation_probability: float = 0.2,
         ga_algorithm: str = "eaMuPlusLambda",
         early_stop_gen: int = 5,
-        scoring_metric: str = "roc_auc",
+        scoring_metric: str = "f1_weighted",
         chunk_size: Union[int, float] = 1.0,
         disable_progressbar: bool = False,
         progress_update_percent: Optional[int] = None,
@@ -191,13 +189,13 @@ class ImputeRandomForest(Impute):
     """Does Random Forest or Extra Trees Iterative imputation of missing data. Iterative imputation uses the n_nearest_features to inform the imputation at each feature (i.e., SNP site), using the N most correlated features per site. The N most correlated features are drawn with probability proportional to correlation for each imputed target feature to ensure coverage of features throughout the imputation process.
 
     Args:
-        **genotype_data (GenotypeData object)**: GenotypeData instance that was used to read in the sequence data.
+        genotype_data (GenotypeData object): GenotypeData instance that was used to read in the sequence data.
 
         prefix (str, optional): Prefix for imputed data's output directory.
 
         write_output (bool, optional): If True, writes imputed data to file on disk. Otherwise just stores it as a class attribute.
 
-        **gridparams (Dict[str, Any] or None or None, optional)**: Dictionary with keys=keyword arguments for the specified estimator and values=lists of parameter values or distributions. If ``gridparams=None``\, a grid search is not performed, otherwise ``gridparams`` will be used to specify parameter ranges or distributions for the grid search. If using ``gridsearch_method="gridsearch"``\, then the ``gridparams`` values can be lists or numpy arrays. If using ``gridsearch_method="randomized_gridsearch"``\, distributions can be specified by using scipy.stats.uniform(low, high) (for a uniform distribution) or scipy.stats.loguniform(low, high) (useful if range of values spans orders of magnitude). If using the genetic algorithm grid search by setting ``gridsearch_method="genetic_algorithm"``\, the parameters can be specified as ``sklearn_genetic.space`` objects. The grid search will determine the optimal parameters as those that maximize the scoring_methods. NOTE: Takes a long time, so run it with a small subset of the data just to find the optimal parameters for the classifier, then run a full imputation using the optimal parameters. Defaults to None.
+        gridparams (Dict[str, Any] or None or None, optional): Dictionary with keys=keyword arguments for the specified estimator and values=lists of parameter values or distributions. If ``gridparams=None``\, a grid search is not performed, otherwise ``gridparams`` will be used to specify parameter ranges or distributions for the grid search. If using ``gridsearch_method="gridsearch"``\, then the ``gridparams`` values can be lists or numpy arrays. If using ``gridsearch_method="randomized_gridsearch"``\, distributions can be specified by using scipy.stats.uniform(low, high) (for a uniform distribution) or scipy.stats.loguniform(low, high) (useful if range of values spans orders of magnitude). If using the genetic algorithm grid search by setting ``gridsearch_method="genetic_algorithm"``\, the parameters can be specified as ``sklearn_genetic.space`` objects. The grid search will determine the optimal parameters as those that maximize the scoring_methods. NOTE: Takes a long time, so run it with a small subset of the data just to find the optimal parameters for the classifier, then run a full imputation using the optimal parameters. Defaults to None.
 
         do_validation (bool, optional): Whether to validate the imputation if not doing a grid search. This validation method randomly replaces between 15% and 50% of the known, non-missing genotypes in ``n_features * column_subset`` of the features. It then imputes the newly missing genotypes for which we know the true values and calculates validation scores. This procedure is replicated ``cv`` times and a mean, median, minimum, maximum, lower 95% confidence interval (CI) of the mean, and the upper 95% CI are calculated and saved to a CSV file. ``gridparams`` must be set to None for ``do_validation`` to work. Calculating a validation score can be turned off altogether by setting ``do_validation`` to False. Defaults to False.
 
@@ -267,7 +265,7 @@ class ImputeRandomForest(Impute):
 
         early_stop_gen (int, optional): If the genetic algorithm sees ``early_stop_gen`` consecutive generations without improvement in the scoring metric, an early stopping callback is implemented. This saves time by reducing the number of generations the genetic algorithm has to perform. Defaults to 5.
 
-        scoring_metric (str, optional): Scoring metric to use for randomized or genetic algorithm grid searches. See https://scikit-learn.org/stable/modules/model_evaluation.html for supported options. Defaults to "roc_auc".
+        scoring_metric (str, optional): Scoring metric to use for grid searches. See the classification metrics in the scikit-learn documentation (https://scikit-learn.org/stable/modules/model_evaluation.html) for supported options. Defaults to "f1_weighted".
 
         column_subset (int or float, optional): If float, proportion of the dataset to randomly subset for the grid search. Should be between 0 and 1, and should also be small, because the grid search takes a long time. If int, subset ``column_subset`` columns. If float, subset ``int(n_features * column_subset)`` columns. Defaults to 0.1.
 
@@ -287,22 +285,20 @@ class ImputeRandomForest(Impute):
         best_params (Dict[str, Any]): Best found parameters from grid search.
 
     Example:
-        >>>from sklearn_genetic.space import Categorical, Integer, Continuous
+        >>> data = GenotypeData(
+        >>>     filename="test.str",
+        >>>     filetype="auto",
+        >>>     guidetree="test.tre",
+        >>>     qmatrix_iqtree="test.iqtree"
+        >>> )
         >>>
-        >>>data = GenotypeData(
-        >>>    filename="test.str",
-        >>>    filetype="auto",
-        >>>    guidetree="test.tre",
-        >>>    qmatrix_iqtree="test.iqtree"
-        >>>)
+        >>> # Genetic Algorithm grid_params
+        >>> grid_params = {
+        >>>     "min_samples_leaf": Integer(1, 10),
+        >>>     "max_depth": Integer(2, 110),
+        >>> }
         >>>
-        >>># Genetic Algorithm grid_params
-        >>>grid_params = {
-        >>>    "min_samples_leaf": Integer(1, 10),
-        >>>    "max_depth": Integer(2, 110),
-        >>>}
-        >>>
-        >>>rf = ImputeRandomForest(
+        >>> rf = ImputeRandomForest(
         >>>     genotype_data=data,
         >>>     gridparams=grid_params,
         >>>     cv=5,
@@ -310,9 +306,9 @@ class ImputeRandomForest(Impute):
         >>>     n_nearest_features=10,
         >>>     n_estimators=100,
         >>>     initial_strategy="phylogeny",
-        >>>)
+        >>> )
         >>>
-        >>>rf_gtdata = rf.imputed
+        >>> rf_gtdata = rf.imputed
     """
 
     def __init__(
@@ -361,7 +357,7 @@ class ImputeRandomForest(Impute):
         mutation_probability: float = 0.2,
         ga_algorithm: str = "eaMuPlusLambda",
         early_stop_gen: int = 5,
-        scoring_metric: str = "roc_auc",
+        scoring_metric: str = "f1_weighted",
         chunk_size: Union[int, float] = 1.0,
         disable_progressbar: bool = False,
         progress_update_percent: Optional[int] = None,
@@ -501,7 +497,7 @@ class ImputeXGBoost(Impute):
 
         early_stop_gen (int, optional): If the genetic algorithm sees ``early_stop_gen`` consecutive generations without improvement in the scoring metric, an early stopping callback is implemented. This saves time by reducing the number of generations the genetic algorithm has to perform. Defaults to 5.
 
-        scoring_metric (str, optional): Scoring metric to use for randomized or genetic algorithm grid searches. See https://scikit-learn.org/stable/modules/model_evaluation.html for supported options. Defaults to "roc_auc".
+        scoring_metric (str, optional): Scoring metric to use for grid searches. See the classification metrics in the scikit-learn documentation (https://scikit-learn.org/stable/modules/model_evaluation.html) for supported options. Defaults to "f1_weighted".
 
         chunk_size (int or float, optional): Number of loci for which to perform IterativeImputer at one time. Useful for reducing the memory usage if you are running out of RAM. If integer is specified, selects ``chunk_size`` loci at a time. If a float is specified, selects ``math.ceil(total_loci * chunk_size)`` loci at a time. Defaults to 1.0 (all features).
 
@@ -519,22 +515,20 @@ class ImputeXGBoost(Impute):
         best_params (Dict[str, Any]): Best found parameters from grid search.
 
     Example:
-        >>>from sklearn_genetic.space import Categorical, Integer, Continuous
+        >>> data = GenotypeData(
+        >>>     filename="test.str",
+        >>>     filetype="auto",
+        >>>     guidetree="test.tre",
+        >>>     qmatrix_iqtree="test.iqtree"
+        >>> )
         >>>
-        >>>data = GenotypeData(
-        >>>    filename="test.str",
-        >>>    filetype="auto",
-        >>>    guidetree="test.tre",
-        >>>    qmatrix_iqtree="test.iqtree"
-        >>>)
+        >>> # Genetic Algorithm grid_params
+        >>> grid_params = {
+        >>>     "learning_rate": Continuous(lower=0.01, upper=0.1),
+        >>>     "max_depth": Integer(2, 110),
+        >>> }
         >>>
-        >>># Genetic Algorithm grid_params
-        >>>grid_params = {
-        >>>    "learning_rate": Continuous(lower=0.01, upper=0.1),
-        >>>    "max_depth": Integer(2, 110),
-        >>>}
-        >>>
-        >>>xgb = ImputeXGBoost(
+        >>> xgb = ImputeXGBoost(
         >>>     genotype_data=data,
         >>>     gridparams=grid_params,
         >>>     cv=5,
@@ -542,9 +536,9 @@ class ImputeXGBoost(Impute):
         >>>     n_nearest_features=10,
         >>>     n_estimators=100,
         >>>     initial_strategy="phylogeny",
-        >>>)
+        >>> )
         >>>
-        >>>xgb_gtdata = xgb.imputed
+        >>> xgb_gtdata = xgb.imputed
     """
 
     def __init__(
@@ -591,7 +585,7 @@ class ImputeXGBoost(Impute):
         mutation_probability: float = 0.2,
         ga_algorithm: str = "eaMuPlusLambda",
         early_stop_gen: int = 5,
-        scoring_metric: str = "roc_auc",
+        scoring_metric: str = "f1_weighted",
         chunk_size: Union[int, float] = 1.0,
         disable_progressbar: bool = False,
         progress_update_percent: Optional[int] = None,
@@ -616,9 +610,9 @@ class ImputeVAE(Impute):
     """Class to impute missing data using a Variational Autoencoder neural network model. For training, missing values are simulated and the model is trained on the simulated missing values. The real missing values are then predicted by the trained model. The strategy for simulating missing values can be set with the ``sim_strategy`` argument.
 
     Args:
-        **genotype_data (GenotypeData object)**: Input data initialized as GenotypeData object. Required positional argument.
+        genotype_data (GenotypeData object): Input data initialized as GenotypeData object. Required positional argument.
 
-        **prefix (str)**: Prefix for output directory. Defaults to "output".
+        prefix (str): Prefix for output directory. Defaults to "output".
 
         gridparams (Dict[str, Any] or None, optional): Dictionary with keys=keyword arguments for the specified estimator and values=lists of parameter values or distributions. If ``gridparams=None``\, a grid search is not performed, otherwise ``gridparams`` will be used to specify parameter ranges or distributions for the grid search. If using ``gridsearch_method="gridsearch"``\, then the ``gridparams`` values can be lists or numpy arrays. If using ``gridsearch_method="randomized_gridsearch"``\, distributions can be specified by using scipy.stats.uniform(low, high) (for a uniform distribution) or scipy.stats.loguniform(low, high) (useful if range of values spans orders of magnitude). If using the genetic algorithm grid search by setting ``gridsearch_method="genetic_algorithm"``\, the parameters can be specified as ``sklearn_genetic.space`` objects. The grid search will determine the optimal parameters as those that maximize the scoring metrics. If it takes a long time, run it with a small subset of the data just to find the optimal parameters for the classifier, then run a full imputation using the optimal parameters. Defaults to None (no gridsearch performed).
 
@@ -662,7 +656,7 @@ class ImputeVAE(Impute):
 
         grid_iter (int, optional): Number of iterations to use for randomized and genetic algorithm grid searches. For randomized grid search, ``grid_iter`` parameter combinations will be randomly sampled. For the genetic algorithm, this determines how many generations the genetic algorithm will run. Defaults to 80.
 
-        scoring_metric (str, optional): Scoring metric to use for the grid search. Supported options include: {"auc_macro", "auc_micro", "precision_recall_macro", "precision_recall_micro", "accuracy", "hamming"}. Note that all metrics are automatically calculated when doing a grid search, the results of which are logged to a CSV file. However, when refitting following the grid search, the value passed to ``scoring_metric`` is used to select the best parameters. If you wish to choose the best parameters from a different metric, that information will also be in the CSV file. "auc_macro" and "auc_micro" get the AUC (area under curve) score for the ROC (Receiver Operating Characteristic) curve. The ROC curves plot the false positive rate (X-axis) versus the true positive rate (Y-axis) for each 012-encoded class and for the macro and micro averages among classes. The false positive rate is defined as: ``False Positive Rate = False Positives / (False Positives + True Negatives)`` and the true positive rate is defined as ``True Positive Rate = True Positives / (True Positives + False Negatives)``\. Macro averaging places equal importance on each class, whereas the micro average is the global average across all classes. AUC scores allow the ROC curve, and thus the model's classification skill, to be summarized as a single number. "precision_recall_macro" and "precision_recall_micro" create Precision-Recall (PR) curves for each class plus the macro and micro averages among classes. Precision is defined as ``True Positives / (True Positives + False Positives)`` and recall is defined as ``Recall = True Positives / (True Positives + False Negatives)``\. Reviewing both precision and recall is useful in cases where there is an imbalance in the observations between the two classes. For example, if there are many examples of major alleles (class 0) and only a few examples of minor alleles (class 2). PR curves take this into account, so use the Average Precision (AP) instead of AUC. AUC and AP are similar metrics, but AP summarizes a precision-recall curve as the weighted mean of precisions achieved at each probability threshold, with the increase in recall from the previous threshold used as the weight. On the contrary, AUC uses linear interpolation with the trapezoidal rule to calculate the area under the curve. "accuracy" calculates ``number of correct predictions / total predictions``\, but can often be misleading when used without considering the model's classification skill for each class. Defaults to "auc_macro".
+        scoring_metric (str, optional): Scoring metric to use for grid searches. See the classification metrics in the scikit-learn documentation (https://scikit-learn.org/stable/modules/model_evaluation.html) for supported options. Defaults to "f1_weighted".
 
         population_size (int or str, optional): Only used for the genetic algorithm grid search. Size of the initial population to sample randomly generated individuals. If set to "auto", then ``population_size`` is calculated as ``15 * n_parameters``\. If set to an integer, then uses the integer value as ``population_size``\. If you need to speed up the genetic algorithm grid search, try decreasing this parameter. See GASearchCV in the sklearn-genetic-opt documentation (https://sklearn-genetic-opt.readthedocs.io) for more info. Defaults to "auto".
 
@@ -735,14 +729,14 @@ class ImputeVAE(Impute):
         sample_weights="auto",
         gridsearch_method="gridsearch",
         grid_iter=80,
-        scoring_metric="auc_macro",
+        scoring_metric="f1_weighted",
         population_size="auto",
         tournament_size=3,
         elitism=True,
         crossover_probability=0.8,
         mutation_probability=0.2,
         ga_algorithm="eaMuPlusLambda",
-        sim_strategy="random",
+        sim_strategy="random_weighted",
         sim_prop_missing=0.2,
         disable_progressbar=False,
         n_jobs=1,
@@ -781,9 +775,9 @@ class ImputeStandardAutoEncoder(Impute):
     """Class to impute missing data using a standard Autoencoder (SAE) neural network model. For training, missing values are simulated and the model is trained on the simulated missing values. The real missing values are then predicted by the trained model. The strategy for simulating missing values can be set with the ``sim_strategy`` argument.
 
     Args:
-        **genotype_data (GenotypeData object)**: Input data initialized as GenotypeData object. Required positional argument.
+        genotype_data (GenotypeData object): Input data initialized as GenotypeData object. Required positional argument.
 
-        **prefix (str)**: Prefix for output directory. Defaults to "output".
+        prefix (str): Prefix for output directory. Defaults to "output".
 
         gridparams (Dict[str, Any] or None, optional): Dictionary with keys=keyword arguments for the specified estimator and values=lists of parameter values or distributions. If ``gridparams=None``\, a grid search is not performed, otherwise ``gridparams`` will be used to specify parameter ranges or distributions for the grid search. If using ``gridsearch_method="gridsearch"``\, then the ``gridparams`` values can be lists or numpy arrays. If using ``gridsearch_method="randomized_gridsearch"``\, distributions can be specified by using scipy.stats.uniform(low, high) (for a uniform distribution) or scipy.stats.loguniform(low, high) (useful if range of values spans orders of magnitude). If using the genetic algorithm grid search by setting ``gridsearch_method="genetic_algorithm"``\, the parameters can be specified as ``sklearn_genetic.space`` objects. The grid search will determine the optimal parameters as those that maximize the scoring metrics. If it takes a long time, run it with a small subset of the data just to find the optimal parameters for the classifier, then run a full imputation using the optimal parameters. Defaults to None (no gridsearch performed).
 
@@ -825,7 +819,7 @@ class ImputeStandardAutoEncoder(Impute):
 
         grid_iter (int, optional): Number of iterations to use for randomized and genetic algorithm grid searches. For randomized grid search, ``grid_iter`` parameter combinations will be randomly sampled. For the genetic algorithm, this determines how many generations the genetic algorithm will run. Defaults to 80.
 
-        scoring_metric (str, optional): Scoring metric to use for the grid search. Supported options include: {"auc_macro", "auc_micro", "precision_recall_macro", "precision_recall_micro", "accuracy"}. Note that all metrics are automatically calculated when doing a grid search, the results of which are logged to a CSV file. However, when refitting following the grid search, the value passed to ``scoring_metric`` is used to select the best parameters. If you wish to choose the best parameters from a different metric, that information will also be in the CSV file. "auc_macro" and "auc_micro" get the AUC (area under curve) score for the ROC (Receiver Operating Characteristic) curve. The ROC curves plot the false positive rate (X-axis) versus the true positive rate (Y-axis) for each 012-encoded class and for the macro and micro averages among classes. The false positive rate is defined as: ``False Positive Rate = False Positives / (False Positives + True Negatives)`` and the true positive rate is defined as ``True Positive Rate = True Positives / (True Positives + False Negatives)``\. Macro averaging places equal importance on each class, whereas the micro average is the global average across all classes. AUC scores allow the ROC curve, and thus the model's classification skill, to be summarized as a single number. "precision_recall_macro" and "precision_recall_micro" create Precision-Recall (PR) curves for each class plus the macro and micro averages among classes. Precision is defined as ``True Positives / (True Positives + False Positives)`` and recall is defined as ``Recall = True Positives / (True Positives + False Negatives)``\. Reviewing both precision and recall is useful in cases where there is an imbalance in the observations between the two classes. For example, if there are many examples of major alleles (class 0) and only a few examples of minor alleles (class 2). AUC and AP are similar metrics, but AP summarizes a precision-recall curve as the weighted mean of precisions achieved at each probability threshold, with the increase in recall from the previous threshold used as the weight. On the contrary, AUC uses linear interpolation with the trapezoidal rule to calculate the area under the curve. "accuracy" calculates ``number of correct predictions / total predictions``\, but can often be misleading when used without considering the model's classification skill for each class. Defaults to "auc_macro".
+        scoring_metric (str, optional): Scoring metric to use for grid searches. See the classification metrics in the scikit-learn documentation (https://scikit-learn.org/stable/modules/model_evaluation.html) for supported options. Defaults to "f1_weighted".
 
         population_size (int or str, optional): Only used for the genetic algorithm grid search. Size of the initial population to sample randomly generated individuals. If set to "auto", then ``population_size`` is calculated as ``15 * n_parameters``\. If set to an integer, then uses the integer value as ``population_size``\. If you need to speed up the genetic algorithm grid search, try decreasing this parameter. See GASearchCV in the sklearn-genetic-opt documentation (https://sklearn-genetic-opt.readthedocs.io) for more info. Defaults to "auto".
 
@@ -898,14 +892,14 @@ class ImputeStandardAutoEncoder(Impute):
         sample_weights="auto",
         gridsearch_method="gridsearch",
         grid_iter=80,
-        scoring_metric="auc_macro",
+        scoring_metric="f1_weighted",
         population_size="auto",
         tournament_size=3,
         elitism=True,
         crossover_probability=0.8,
         mutation_probability=0.2,
         ga_algorithm="eaMuPlusLambda",
-        sim_strategy="random",
+        sim_strategy="random_weighted",
         sim_prop_missing=0.2,
         disable_progressbar=False,
         n_jobs=1,
@@ -974,9 +968,9 @@ class ImputeUBP(Impute):
     UBP [1]_ is an extension of NLPCA [2]_ with the input being randomly generated and of reduced dimensionality that gets trained to predict the supplied output based on only known values. It then uses the trained model to predict missing values. However, in contrast to NLPCA, UBP trains the model over three phases. The first is a single layer perceptron used to refine the randomly generated input. The second phase is a multi-layer perceptron that uses the refined reduced-dimension data from the first phase as input. In the second phase, the model weights are refined but not the input. In the third phase, the model weights and the inputs are then refined.
 
     Args:
-        **genotype_data (GenotypeData object)**: Input data initialized as GenotypeData object. Required positional argument.
+        genotype_data (GenotypeData object): Input data initialized as GenotypeData object. Required positional argument.
 
-        **prefix (str)**: Prefix for output directory. Defaults to "output".
+        prefix (str): Prefix for output directory. Defaults to "output".
 
         gridparams (Dict[str, Any] or None, optional): Dictionary with keys=keyword arguments for the specified estimator and values=lists of parameter values or distributions. If ``gridparams=None``\, a grid search is not performed, otherwise ``gridparams`` will be used to specify parameter ranges or distributions for the grid search. If using ``gridsearch_method="gridsearch"``\, then the ``gridparams`` values can be lists or numpy arrays. If using ``gridsearch_method="randomized_gridsearch"``\, distributions can be specified by using scipy.stats.uniform(low, high) (for a uniform distribution) or scipy.stats.loguniform(low, high) (useful if range of values spans orders of magnitude). If using the genetic algorithm grid search by setting ``gridsearch_method="genetic_algorithm"``\, the parameters can be specified as ``sklearn_genetic.space`` objects. The grid search will determine the optimal parameters as those that maximize the scoring metrics. If it takes a long time, run it with a small subset of the data just to find the optimal parameters for the classifier, then run a full imputation using the optimal parameters. Defaults to None (no gridsearch performed).
 
@@ -1018,7 +1012,7 @@ class ImputeUBP(Impute):
 
         grid_iter (int, optional): Number of iterations to use for randomized and genetic algorithm grid searches. For randomized grid search, ``grid_iter`` parameter combinations will be randomly sampled. For the genetic algorithm, this determines how many generations the genetic algorithm will run. Defaults to 80.
 
-        scoring_metric (str, optional): Scoring metric to use for the grid search. Supported options include: {"auc_macro", "auc_micro", "precision_recall_macro", "precision_recall_micro", "accuracy"}. Note that all metrics are automatically calculated when doing a grid search, the results of which are logged to a CSV file. However, when refitting following the grid search, the value passed to ``scoring_metric`` is used to select the best parameters. If you wish to choose the best parameters from a different metric, that information will also be in the CSV file. "auc_macro" and "auc_micro" get the AUC (area under curve) score for the ROC (Receiver Operating Characteristic) curve. The ROC curves plot the false positive rate (X-axis) versus the true positive rate (Y-axis) for each 012-encoded class and for the macro and micro averages among classes. The false positive rate is defined as: ``False Positive Rate = False Positives / (False Positives + True Negatives)`` and the true positive rate is defined as ``True Positive Rate = True Positives / (True Positives + False Negatives)``\. Macro averaging places equal importance on each class, whereas the micro average is the global average across all classes. AUC scores allow the ROC curve, and thus the model's classification skill, to be summarized as a single number. "precision_recall_macro" and "precision_recall_micro" create Precision-Recall (PR) curves for each class plus the macro and micro averages among classes. Precision is defined as ``True Positives / (True Positives + False Positives)`` and recall is defined as ``Recall = True Positives / (True Positives + False Negatives)``\. Reviewing both precision and recall is useful in cases where there is an imbalance in the observations between the two classes. For example, if there are many examples of major alleles (class 0) and only a few examples of minor alleles (class 2). AUC and AP are similar metrics, but AP summarizes a precision-recall curve as the weighted mean of precisions achieved at each probability threshold, with the increase in recall from the previous threshold used as the weight. On the contrary, AUC uses linear interpolation with the trapezoidal rule to calculate the area under the curve. "accuracy" calculates ``number of correct predictions / total predictions``\, but can often be misleading when used without considering the model's classification skill for each class. Defaults to "auc_macro".
+        scoring_metric (str, optional): Scoring metric to use for grid searches. See the classification metrics in the scikit-learn documentation (https://scikit-learn.org/stable/modules/model_evaluation.html) for supported options. Defaults to "f1_weighted".
 
         population_size (int or str, optional): Only used for the genetic algorithm grid search. Size of the initial population to sample randomly generated individuals. If set to "auto", then ``population_size`` is calculated as ``15 * n_parameters``\. If set to an integer, then uses the integer value as ``population_size``\. If you need to speed up the genetic algorithm grid search, try decreasing this parameter. See GASearchCV in the sklearn-genetic-opt documentation (https://sklearn-genetic-opt.readthedocs.io) for more info. Defaults to "auto".
 
@@ -1096,14 +1090,14 @@ class ImputeUBP(Impute):
         sample_weights="auto",
         gridsearch_method="gridsearch",
         grid_iter=80,
-        scoring_metric="auc_macro",
+        scoring_metric="f1_weighted",
         population_size="auto",
         tournament_size=3,
         elitism=True,
         crossover_probability=0.8,
         mutation_probability=0.2,
         ga_algorithm="eaMuPlusLambda",
-        sim_strategy="random",
+        sim_strategy="random_weighted",
         sim_prop_missing=0.2,
         disable_progressbar=False,
         n_jobs=1,
@@ -1175,9 +1169,9 @@ class ImputeNLPCA(ImputeUBP):
     NLPCA [2]_ trains randomly generated, reduced-dimensionality input to predict the correct output. In the case of imputation, the model is trained only on known values, and the trained model is then used to predict the missing values.
 
     Args:
-        **genotype_data (GenotypeData object)**: Input data initialized as GenotypeData object. Required positional argument.
+        genotype_data (GenotypeData object): Input data initialized as GenotypeData object. Required positional argument.
 
-        **prefix (str)**: Prefix for output directory. Defaults to "output".
+        prefix (str): Prefix for output directory. Defaults to "output".
 
         gridparams (Dict[str, Any] or None, optional): Dictionary with keys=keyword arguments for the specified estimator and values=lists of parameter values or distributions. If ``gridparams=None``\, a grid search is not performed, otherwise ``gridparams`` will be used to specify parameter ranges or distributions for the grid search. If using ``gridsearch_method="gridsearch"``\, then the ``gridparams`` values can be lists or numpy arrays. If using ``gridsearch_method="randomized_gridsearch"``\, distributions can be specified by using scipy.stats.uniform(low, high) (for a uniform distribution) or scipy.stats.loguniform(low, high) (useful if range of values spans orders of magnitude). If using the genetic algorithm grid search by setting ``gridsearch_method="genetic_algorithm"``\, the parameters can be specified as ``sklearn_genetic.space`` objects. The grid search will determine the optimal parameters as those that maximize the scoring metrics. If it takes a long time, run it with a small subset of the data just to find the optimal parameters for the classifier, then run a full imputation using the optimal parameters. Defaults to None (no gridsearch performed).
 
@@ -1219,7 +1213,7 @@ class ImputeNLPCA(ImputeUBP):
 
         grid_iter (int, optional): Number of iterations to use for randomized and genetic algorithm grid searches. For randomized grid search, ``grid_iter`` parameter combinations will be randomly sampled. For the genetic algorithm, this determines how many generations the genetic algorithm will run. Defaults to 80.
 
-        scoring_metric (str, optional): Scoring metric to use for the grid search. Supported options include: {"auc_macro", "auc_micro", "precision_recall_macro", "precision_recall_micro", "accuracy"}. Note that all metrics are automatically calculated when doing a grid search, the results of which are logged to a CSV file. However, when refitting following the grid search, the value passed to ``scoring_metric`` is used to select the best parameters. If you wish to choose the best parameters from a different metric, that information will also be in the CSV file. "auc_macro" and "auc_micro" get the AUC (area under curve) score for the ROC (Receiver Operating Characteristic) curve. The ROC curves plot the false positive rate (X-axis) versus the true positive rate (Y-axis) for each 012-encoded class and for the macro and micro averages among classes. The false positive rate is defined as: ``False Positive Rate = False Positives / (False Positives + True Negatives)`` and the true positive rate is defined as ``True Positive Rate = True Positives / (True Positives + False Negatives)``\. Macro averaging places equal importance on each class, whereas the micro average is the global average across all classes. AUC scores allow the ROC curve, and thus the model's classification skill, to be summarized as a single number. "precision_recall_macro" and "precision_recall_micro" create Precision-Recall (PR) curves for each class plus the macro and micro averages among classes. Precision is defined as ``True Positives / (True Positives + False Positives)`` and recall is defined as ``Recall = True Positives / (True Positives + False Negatives)``\. Reviewing both precision and recall is useful in cases where there is an imbalance in the observations between the two classes. For example, if there are many examples of major alleles (class 0) and only a few examples of minor alleles (class 2). AUC and AP are similar metrics, but AP summarizes a precision-recall curve as the weighted mean of precisions achieved at each probability threshold, with the increase in recall from the previous threshold used as the weight. On the contrary, AUC uses linear interpolation with the trapezoidal rule to calculate the area under the curve. "accuracy" calculates ``number of correct predictions / total predictions``\, but can often be misleading when used without considering the model's classification skill for each class. Defaults to "auc_macro".
+        scoring_metric (str, optional): Scoring metric to use for grid searches. See the classification metrics in the scikit-learn documentation (https://scikit-learn.org/stable/modules/model_evaluation.html) for supported options. Defaults to "f1_weighted".
 
         population_size (int or str, optional): Only used for the genetic algorithm grid search. Size of the initial population to sample randomly generated individuals. If set to "auto", then ``population_size`` is calculated as ``15 * n_parameters``\. If set to an integer, then uses the integer value as ``population_size``\. If you need to speed up the genetic algorithm grid search, try decreasing this parameter. See GASearchCV in the sklearn-genetic-opt documentation (https://sklearn-genetic-opt.readthedocs.io) for more info. Defaults to "auto".
 

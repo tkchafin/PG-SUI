@@ -7,5 +7,5 @@ dependencies:
   - python=3.10
   - pip
   - pip:
-    - snpio
+    - git+https://github.com/tkchafin/SNPio.git#egg=snpio
     - git+https://github.com/btmartin721/PG-SUI.git#egg=pg-sui

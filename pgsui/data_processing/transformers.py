@@ -40,9 +40,7 @@ tf.get_logger().setLevel(logging.ERROR)
 
 # Monkey patching deprecation utils to supress warnings.
 # noinspection PyUnusedLocal
-def deprecated(
-    date, instructions, warn_once=True
-):  # pylint: disable=unused-argument
+def deprecated(date, instructions, warn_once=True):  # pylint: disable=unused-argument
     def deprecated_wrapper(func):
         return func
 
@@ -771,10 +769,7 @@ class SimGenotypeDataTransformer(BaseEstimator, TransformerMixin):
         elif self.strategy == "random_weighted_inv":
             self.mask_ = self.random_weighted_missing_data(X, inv=True)
 
-        elif (
-            self.strategy == "nonrandom"
-            or self.strategy == "nonrandom_weighted"
-        ):
+        elif self.strategy == "nonrandom" or self.strategy == "nonrandom_weighted":
             if self.genotype_data.tree is None:
                 raise TypeError(
                     "SimGenotypeData.tree cannot be NoneType when "
@@ -862,14 +857,10 @@ class SimGenotypeDataTransformer(BaseEstimator, TransformerMixin):
             self._validate_mask()
 
         else:
-            raise ValueError(
-                "Invalid SimGenotypeData.strategy value:", self.strategy
-            )
+            raise ValueError("Invalid SimGenotypeData.strategy value:", self.strategy)
 
         # Get all missing values.
-        self.all_missing_mask_ = np.logical_or(
-            self.mask_, self.original_missing_mask_
-        )
+        self.all_missing_mask_ = np.logical_or(self.mask_, self.original_missing_mask_)
         # Get values where original value was not missing and simulated.
         # data is missing.
         self.sim_missing_mask_ = np.logical_and(
@@ -995,9 +986,7 @@ class SimGenotypeDataTransformer(BaseEstimator, TransformerMixin):
             Xmiss = np.where(self.original_missing_mask_.ravel())[0]
 
             # Generate mask of 0's (non-missing) and 1's (missing)
-            obs_mask = np.random.choice(
-                classes, size=Xobs.size, p=class_weights
-            )
+            obs_mask = np.random.choice(classes, size=Xobs.size, p=class_weights)
             obs_mask = (obs_mask == classes[:, None]).argmax(axis=0)
 
             # Make missing data mask
@@ -1059,9 +1048,7 @@ class SimGenotypeDataTransformer(BaseEstimator, TransformerMixin):
                     continue
 
             if tips_only and internal_only:
-                raise ValueError(
-                    "tips_only and internal_only cannot both be True"
-                )
+                raise ValueError("tips_only and internal_only cannot both be True")
 
             if tips_only:
                 if not node.is_leaf():
@@ -1119,7 +1106,9 @@ class SimGenotypeDataTransformer(BaseEstimator, TransformerMixin):
             filename_prefix (str): Prefix for the filenames to write to.
         """
         np.save(filename_prefix + "_mask.npy", self.mask_)
-        np.save(filename_prefix + "_original_missing_mask.npy", self.original_missing_mask_)
+        np.save(
+            filename_prefix + "_original_missing_mask.npy", self.original_missing_mask_
+        )
 
     def read_mask(self, filename_prefix):
         """Read mask from file.
@@ -1134,17 +1123,20 @@ class SimGenotypeDataTransformer(BaseEstimator, TransformerMixin):
         if not os.path.isfile(filename_prefix + "_mask.npy"):
             raise FileNotFoundError(filename_prefix + "_mask.npy" + " does not exist.")
         if not os.path.isfile(filename_prefix + "_original_missing_mask.npy"):
-            raise FileNotFoundError(filename_prefix + "_original_missing_mask.npy" + " does not exist.")
+            raise FileNotFoundError(
+                filename_prefix + "_original_missing_mask.npy" + " does not exist."
+            )
 
         # Load mask from file
         self.mask_ = np.load(filename_prefix + "_mask.npy")
-        self.original_missing_mask_ = np.load(filename_prefix + "_original_missing_mask.npy")
+        self.original_missing_mask_ = np.load(
+            filename_prefix + "_original_missing_mask.npy"
+        )
 
         # Recalculate all_missing_mask_ from mask_ and original_missing_mask_
         self.all_missing_mask_ = np.logical_or(self.mask_, self.original_missing_mask_)
 
         return self.mask_, self.original_missing_mask_, self.all_missing_mask_
-
 
     @property
     def missing_count(self) -> int:

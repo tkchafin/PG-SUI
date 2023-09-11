@@ -10,6 +10,9 @@ snp_per_locus: 1
 model: "gtrgamma"
 write_gene_alignments: False
 
+# necessary on arm mac
+iqtree_bin: "/Users/tyler/local/bin/iqtree2"
+
 ###########################
 # variable params (can be specified as a list)
 # tree shape

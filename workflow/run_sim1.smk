@@ -52,7 +52,7 @@ config["out_dir"] = os.path.normpath(config["out_dir"])
 
 ##################################################
 # Define the output pattern
-output_pattern = "rep{rep}_t{t}_c{c}_a{a}_{model}"
+output_pattern = "rep{rep}-t{t}-c{c}-a{a}-{model}"
 
 # Expand the output pattern for each parameter combination
 final_outputs = expand(
@@ -62,8 +62,8 @@ final_outputs = expand(
     os.path.join("{out_dir}", "datasets", output_pattern + ".phylip.mlrate"),
     os.path.join("{out_dir}", "datasets", output_pattern + ".phylip.iqtree"),
     os.path.join("{out_dir}", "datasets", output_pattern + ".phylip.rooted.tre"),
-    os.path.join("{out_dir}", "masks", output_pattern + "_p{p}_{strategy}_mask.npy"),
-    os.path.join("{out_dir}", "masks", output_pattern + "_p{p}_{strategy}_original_missing_mask.npy"),
+    os.path.join("{out_dir}", "masks", output_pattern + "-p{p}-{strategy}_mask.npy"),
+    os.path.join("{out_dir}", "masks", output_pattern + "-p{p}-{strategy}_original_missing_mask.npy"),
     os.path.join("{out_dir}", "metadata", "popmap.txt")],
     out_dir=config["out_dir"],
     rep=range(config["reps"]),
@@ -94,15 +94,15 @@ rule generate_popmap:
 
 rule simulate_sequences:
     output:
-        os.path.join(config["out_dir"], "datasets", "rep{rep}_t{t}_c{c}_a{a}_{model}_guidetree.tre"),
-        os.path.join(config["out_dir"], "datasets", "rep{rep}_t{t}_c{c}_a{a}_{model}.phylip")
+        os.path.join(config["out_dir"], "datasets", "rep{rep}-t{t}-c{c}-a{a}-{model}_guidetree.tre"),
+        os.path.join(config["out_dir"], "datasets", "rep{rep}-t{t}-c{c}-a{a}-{model}.phylip")
     log:
-        os.path.join(config["out_dir"], "logs", "tree_sim", "rep{rep}_t{t}_c{c}_a{a}_{model}.log")
+        os.path.join(config["out_dir"], "logs", "tree_sim", "rep{rep}-t{t}-c{c}-a{a}-{model}.log")
     conda:
         os.path.join("envs", "tree_sim.yml")
     params:
         script_path = os.path.join(workflow.basedir, "scripts", "sim_treeparams.py"),
-        output_prefix = os.path.join(config["out_dir"], "datasets", "rep"),
+        output_prefix = os.path.join(config["out_dir"], "datasets", "rep{rep}-t{t}-c{c}-a{a}-{model}"),
         num_loci = config["num_loci"],
         loc_len = config["loc_len"],
         num_clades = config["clades"],
@@ -113,7 +113,7 @@ rule simulate_sequences:
         """
         mkdir -p $(dirname {output[0]}) && \
         python3 {params.script_path} \
-            --prefix {params.output_prefix}{wildcards.rep}_ \
+            --prefix {params.output_prefix} \
             --alpha {wildcards.a} \
             --num_loci {params.num_loci} \
             --model {wildcards.model} \
@@ -128,22 +128,23 @@ rule simulate_sequences:
 
 rule run_iqtree:
     input:
-        os.path.join(config["out_dir"], "datasets", "rep{rep}_t{t}_c{c}_a{a}_{model}.phylip")    
+        os.path.join(config["out_dir"], "datasets", "rep{rep}-t{t}-c{c}-a{a}-{model}.phylip")    
     output:
-        os.path.join(config["out_dir"], "datasets", "rep{rep}_t{t}_c{c}_a{a}_{model}.phylip.treefile"),
-        os.path.join(config["out_dir"], "datasets", "rep{rep}_t{t}_c{c}_a{a}_{model}.phylip.mlrate"),
-        os.path.join(config["out_dir"], "datasets", "rep{rep}_t{t}_c{c}_a{a}_{model}.phylip.iqtree")
+        os.path.join(config["out_dir"], "datasets", "rep{rep}-t{t}-c{c}-a{a}-{model}.phylip.treefile"),
+        os.path.join(config["out_dir"], "datasets", "rep{rep}-t{t}-c{c}-a{a}-{model}.phylip.mlrate"),
+        os.path.join(config["out_dir"], "datasets", "rep{rep}-t{t}-c{c}-a{a}-{model}.phylip.iqtree")
     conda:
-        os.path.join("envs", "iqtree2.yml")
+        "envs/iqtree2.yml" if "iqtree_bin" not in config else None
     log:
-        os.path.join(config["out_dir"], "logs", "iqtree", "rep{rep}_t{t}_c{c}_a{a}_{model}.log")
+        os.path.join(config["out_dir"], "logs", "iqtree", "rep{rep}-t{t}-c{c}-a{a}-{model}.log")
     params:
         seed = random.randint(1, 1e6),
-        threads = 1
+        threads = 1,
+        iqtree_bin = config["iqtree_bin"] if "iqtree_bin" in config else "iqtree"
     shell:
         """
         mkdir -p $(dirname {output[0]}) && \
-        iqtree \
+        {params.iqtree_bin} \
             -s {input[0]} \
             -m "GTR+I*G4" \
             -redo \
@@ -158,15 +159,16 @@ rule run_iqtree:
             {input[0]}*.mldist
         """
 
+
 rule reroot_tree:
     input:
-        os.path.join(config["out_dir"], "datasets", "rep{rep}_t{t}_c{c}_a{a}_{model}.phylip.treefile")
+        os.path.join(config["out_dir"], "datasets", "rep{rep}-t{t}-c{c}-a{a}-{model}.phylip.treefile")
     output:
-        os.path.join(config["out_dir"], "datasets", "rep{rep}_t{t}_c{c}_a{a}_{model}.phylip.rooted.tre")
+        os.path.join(config["out_dir"], "datasets", "rep{rep}-t{t}-c{c}-a{a}-{model}.phylip.rooted.tre")
     conda:
         os.path.join("envs", "tree_sim.yml")
     log:
-        os.path.join(config["out_dir"], "logs", "reroot_tree", "rep{rep}_t{t}_c{c}_a{a}_{model}.log")
+        os.path.join(config["out_dir"], "logs", "reroot_tree", "rep{rep}-t{t}-c{c}-a{a}-{model}.log")
     params:
         outgroup = "pop" + str(config["clades"] - 1) + "_",
         script_path = os.path.join(workflow.basedir, "scripts", "reroot_tree.py")
@@ -181,17 +183,17 @@ rule reroot_tree:
 
 rule generate_mask:
     input:
-        phylip = os.path.join(config["out_dir"], "datasets", "rep{rep}_t{t}_c{c}_a{a}_{model}.phylip"),
+        phylip = os.path.join(config["out_dir"], "datasets", "rep{rep}-t{t}-c{c}-a{a}-{model}.phylip"),
         popmap = os.path.join(config["out_dir"], "metadata", "popmap.txt"),
-        tree = os.path.join(config["out_dir"], "datasets", "rep{rep}_t{t}_c{c}_a{a}_{model}.phylip.rooted.tre"),
+        tree = os.path.join(config["out_dir"], "datasets", "rep{rep}-t{t}-c{c}-a{a}-{model}.phylip.rooted.tre"),
     output:
-        missing = os.path.join(config["out_dir"], "masks", "rep{rep}_t{t}_c{c}_a{a}_{model}_p{p}_{strategy}_original_missing_mask.npy"),
-        mask = os.path.join(config["out_dir"], "masks", "rep{rep}_t{t}_c{c}_a{a}_{model}_p{p}_{strategy}_mask.npy")
+        missing = os.path.join(config["out_dir"], "masks", "rep{rep}-t{t}-c{c}-a{a}-{model}-p{p}-{strategy}_original_missing_mask.npy"),
+        mask = os.path.join(config["out_dir"], "masks", "rep{rep}-t{t}-c{c}-a{a}-{model}-p{p}-{strategy}_mask.npy")
     params:
         script_path = os.path.join(workflow.basedir, "scripts", "generate_mask.py"),
-        output_prefix = os.path.join(config["out_dir"], "masks", "rep{rep}_t{t}_c{c}_a{a}_{model}_p{p}_{strategy}_original_missing")
+        output_prefix = os.path.join(config["out_dir"], "masks", "rep{rep}-t{t}-c{c}-a{a}-{model}-p{p}-{strategy}")
     log:
-        os.path.join(config["out_dir"], "logs", "generate_mask", "rep{rep}_t{t}_c{c}_a{a}_{model}_p{p}_{strategy}.log")
+        os.path.join(config["out_dir"], "logs", "generate_mask", "rep{rep}-t{t}-c{c}-a{a}-{model}-p{p}-{strategy}.log")
     conda:
         os.path.join("envs", "pgsui.yml")
     shell:
@@ -206,3 +208,91 @@ rule generate_mask:
             --output {params.output_prefix} \
             > {log} 2>&1
         """
+
+
+# rule mask_data
+
+# rule plot_missingness
+
+# rule imputation
+
+# rule get_accuracy 
+#   summarize accuracy 
+#   also accuracy by site X some other metrics? MAF/ missingness ? 
+
+# rule collect_accuracy
+
+
+# rule imputation:
+#     input:
+#         phylip = os.path.join(config["out_dir"], "datasets", "rep{rep}-t{t}-c{c}-a{a}-{model}.phylip"),
+#         popmap = os.path.join(config["out_dir"], "metadata", "popmap.txt"),
+#         tree = os.path.join(config["out_dir"], "datasets", "rep{rep}-t{t}-c{c}-a{a}-{model}.phylip.rooted.tre"),
+#         mask = os.path.join(config["out_dir"], "masks", "rep{rep}-t{t}-c{c}-a{a}-{model}-p{p}-{strategy}_mask.npy"),
+#     params:
+#         strategy = config["missing_strategy"],
+#         prop_missing = config["missing_proportion"],
+#         method = config["imputation_method"],
+#     output:
+#         os.path.join(config["out_dir"], "imputed", "rep{rep}-t{t}-c{c}-a{a}-{model}-p{p}-{strategy}-{method}_imputed.phy"),
+#     log:
+#         os.path.join(config["out_dir"], "logs", "imputation", "rep{rep}-t{t}-c{c}-a{a}-{model}-p{p}-{strategy}-{method}.log"),
+#     run:
+#         # Define classes map
+#         classes_map = {
+#             "ImputeKNN": ImputeKNN,
+#             "ImputeRandomForest": ImputeRandomForest,
+#             # Define the rest of the classes
+#         }
+
+#         # Read in the inputs
+#         genotype_data = GenotypeData(
+#             filename=input.phylip,
+#             popmapfile=input.popmap,
+#             guidetree=input.tree,
+#         )
+
+#         # Create a SimGenotypeDataTransformer instance and use it
+#         # to simulate missing data
+#         transformer = SimGenotypeDataTransformer(
+#             genotype_data=genotype_data,
+#             prop_missing=params.prop_missing,
+#             strategy=params.strategy,
+#         )
+#         transformer.fit(genotype_data.genotypes_012(fmt="numpy"))
+#         simulated_data = copy.deepcopy(genotype_data)
+
+#         simulated_data.genotypes_012 = transformer.transform(
+#             genotype_data.genotypes_012(fmt="numpy")
+#         )
+
+#         # Determine if we're using grid search or not
+#         do_gridsearch = "_grid" in params.method
+#         # Get the class name
+#         class_name = params.method.replace("_grid", "")
+
+#         # Get the class
+#         class_instance = classes_map[class_name]
+
+#         if do_gridsearch:
+#             # Define your parameter grid
+#             param_grid = {
+#                 "n_estimators": [50, 100],
+#                 # Add more parameters if needed
+#             }
+#         else:
+#             param_grid = None
+
+#         instance = class_instance(
+#             simulated_data,
+#             gridparams=param_grid,
+#         )
+#         imputed_data = instance.imputed.genotypes_012(fmt="numpy")
+
+#         # Save imputed data
+#         np.savetxt(output[0], imputed_data, fmt="%d")
+
+#         # Log the results
+#         with open(log[0], 'w') as f:
+#             f.write("Imputation complete.\n")
+

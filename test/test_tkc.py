@@ -81,14 +81,15 @@ class TestMyClasses(unittest.TestCase):
         else:
             param_grid = None
 
-        kwargs = {
-            'sim_strategy': "random_weighted"
-        }
+        # kwargs = {
+        #     'sim_strategy': "random_weighted"
+        # }
 
         instance = class_instance(
             self.simulated_data, 
-            gridparams=param_grid, 
-            **kwargs)
+            gridparams=param_grid,
+            scoring_metric="f1_macro")
+            #**kwargs)
 
         # Write the masks
         self.transformer.write_mask(filename_prefix="mask_test")
@@ -161,8 +162,8 @@ class TestMyClasses(unittest.TestCase):
     # def test_ImputeXGBoost(self):
     #     self._test_class(ImputeXGBoost)
 
-    def test_ImputeVAE(self):
-        self._test_class(ImputeVAE)
+    # def test_ImputeVAE(self):
+    #     self._test_class(ImputeVAE)
 
     # def test_ImputeStandardAutoEncoder(self):
     #     self._test_class(ImputeStandardAutoEncoder)
@@ -182,8 +183,8 @@ class TestMyClasses(unittest.TestCase):
     # def test_ImputeXGBoost_grid(self):
     #     self._test_class(ImputeXGBoost, do_gridsearch=True)
 
-    # def test_ImputeVAE_grid(self):
-    #     self._test_class(ImputeVAE, do_gridsearch=True)
+    def test_ImputeVAE_grid(self):
+        self._test_class(ImputeVAE, do_gridsearch=True)
 
     # def test_ImputeStandardAutoEncoder_grid(self):
     #     self._test_class(ImputeStandardAutoEncoder, do_gridsearch=True)

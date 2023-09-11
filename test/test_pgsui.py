@@ -174,11 +174,11 @@ def main():
                 )
 
                 print("-----------------------------------------------------")
-                print("--- Testing ImputeNMF...")
+                print("--- Testing ImputeMF...")
                 print("-----------------------------------------------------")
                 print("\n")
 
-                mf = ImputeNMF(
+                mf = ImputeMF(
                     genotype_data=data,
                     prefix=prefix,
                     write_output=False,

@@ -7,6 +7,19 @@ from snpio import GenotypeData
 from pgsui import *
 from pgsui.utils.misc import HiddenPrints
 
+from sklearn.metrics import (
+    balanced_accuracy_score,
+    roc_auc_score,
+    precision_recall_fscore_support,
+    f1_score,
+    average_precision_score,
+    accuracy_score,
+)
+
+from sklearn.preprocessing import label_binarize
+
+from sklearn.utils.class_weight import compute_class_weight
+
 
 class TestMyClasses(unittest.TestCase):
     def setUp(self):
@@ -30,7 +43,7 @@ class TestMyClasses(unittest.TestCase):
                 strategy="random",
             )
             self.transformer.fit(self.genotype_data.genotypes_012(fmt="numpy"))
-            self.simulated_data = copy.deepcopy(self.genotype_data)
+            self.simulated_data = self.genotype_data.copy()
 
             self.simulated_data.genotypes_012 = self.transformer.transform(
                 self.genotype_data.genotypes_012(fmt="numpy")
@@ -58,38 +71,38 @@ class TestMyClasses(unittest.TestCase):
         instance = class_instance(
             self.simulated_data,
             gridparams=param_grid,
+            sample_weights=None,
         )
-        imputed_data = instance.imputed.genotypes_012(fmt="numpy")
+        imputed_data = instance.imputed.genotypes_int
 
         # Test that the imputed values are close to the original values
-        accuracy = self.transformer.accuracy(
-            self.genotype_data.genotypes_012(fmt="numpy"), imputed_data
-        )
+        # accuracy = self.transformer.accuracy(
+        #     self.genotype_data.genotypes_012(fmt="numpy"), imputed_data
+        # )
 
         (
+            accuracy,
             auc_roc_scores,
             precision_scores,
             recall_scores,
             avg_precision_scores,
-        ) = self.transformer.auc_roc_pr_ap(
-            self.genotype_data.genotypes_012(fmt="numpy"), imputed_data
-        )
+            f1,
+        ) = self._scoring_metrics(self.genotype_data.genotypes_int, imputed_data)
 
+        pprint.PrettyPrinter(indent=4, sort_dicts=True).pprint(f"ACCURACY: {accuracy}")
         pprint.PrettyPrinter(indent=4, sort_dicts=True).pprint(
-            f"OVERALL ACCURACY: {accuracy}"
+            f"AUC-ROC: {auc_roc_scores}"
         )
         pprint.PrettyPrinter(indent=4, sort_dicts=True).pprint(
-            f"AUC-ROC PER CLASS: {dict(zip(range(3), auc_roc_scores))}"
+            f"PRECISION: {precision_scores}"
         )
         pprint.PrettyPrinter(indent=4, sort_dicts=True).pprint(
-            f"PRECISION PER CLASS: {dict(zip(range(3), precision_scores))}"
+            f"RECALL: {recall_scores}"
         )
         pprint.PrettyPrinter(indent=4, sort_dicts=True).pprint(
-            f"RECALL PER CLASS: {dict(zip(range(3), recall_scores))}"
+            f"AVERAGE PRECISION: {avg_precision_scores}"
         )
-        pprint.PrettyPrinter(indent=4, sort_dicts=True).pprint(
-            f"AVERAGE PRECISION PER CLASS: {dict(zip(range(3), avg_precision_scores))}"
-        )
+        pprint.PrettyPrinter(indent=4, sort_dicts=True).pprint(f"F1 SCORE: {f1}")
         print("\n")
 
     def test_ImputeKNN(self):
@@ -145,6 +158,47 @@ class TestMyClasses(unittest.TestCase):
 
     def test_ImputeRefAllele(self):
         self._test_class(ImputeRefAllele)
+
+    def _scoring_metrics(self, y_true, y_pred):
+        """Calcuate AUC-ROC, Precision-Recall, and Average Precision (AP).
+
+        Args:
+            X_true (np.ndarray): True values.
+
+            X_pred (np.ndarray): Imputed values.
+
+        Returns:
+            List[float]: List of AUC-ROC scores in order of: 0,1,2.
+            List[float]: List of precision scores in order of: 0,1,2.
+            List[float]: List of recall scores in order of: 0,1,2.
+            List[float]: List of average precision scores in order of 0,1,2.
+
+        """
+        y_true = y_true[self.transformer.sim_missing_mask_]
+        y_pred = y_pred[self.transformer.sim_missing_mask_]
+
+        # Binarize the output
+        y_true_bin = label_binarize(y_true, classes=[0, 1, 2])
+        y_pred_bin = label_binarize(y_pred, classes=[0, 1, 2])
+
+        accuracy = accuracy_score(y_true, y_pred)
+
+        # AUC-ROC score
+        auc_roc = roc_auc_score(y_true_bin, y_pred_bin, average="weighted")
+
+        # Precision-recall score
+        precision, recall, _, _ = precision_recall_fscore_support(
+            y_true_bin, y_pred_bin, average="weighted"
+        )
+
+        # Average precision score
+        avg_precision = average_precision_score(
+            y_true_bin, y_pred_bin, average="weighted"
+        )
+
+        f1 = f1_score(y_true_bin, y_pred_bin, average="weighted")
+
+        return (accuracy, auc_roc, precision, recall, avg_precision, f1)
 
 
 if __name__ == "__main__":

@@ -7,7 +7,7 @@ def read(fname):
 
 
 NAME = "pg-sui"
-VERSION = "0.2.3.1"
+VERSION = "1.0.2"
 AUTHORS = "Bradley T. Martin and Tyler K. Chafin"
 AUTHOR_EMAIL = "evobio721@gmail.com"
 MAINTAINER = "Bradley T. Martin"
@@ -32,20 +32,22 @@ setup(
         "Bug Tracker": "https://github.com/btmartin721/PG-SUI/issues",
     },
     keywords=[
-        "python",
         "impute",
         "imputation",
         "imputer",
         "machine learning",
         "neural network",
+        "deep learning",
+        "python",
         "api",
-        "IterativeImputer",
         "vae",
+        "autoencoder",
         "ubp",
         "nlpca",
-        "autoencoder",
-        "deep learning",
         "population genomics",
+        "unsupervised",
+        "supervised",
+        "IterativeImputer",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
@@ -54,7 +56,7 @@ setup(
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
-        "Development Status :: 4 - Beta",
+        "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Topic :: Scientific/Engineering :: Bio-Informatics",
@@ -63,7 +65,7 @@ setup(
     ],
     license="GNU General Public License v3 (GPLv3)",
     packages=find_packages(),
-    python_requires=">=3.8,<4",
+    python_requires=">=3.8",
     install_requires=[
         "matplotlib",
         "seaborn",
